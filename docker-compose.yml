@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"    # Порт для RabbitMQ
+      - "15672:15672"  # Веб-интерфейс для администрирования
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      retries: 5
+    networks:
+      - microservices
+
+  user-service:
+    build:
+      context: ./user-service
+    ports:
+      - "8081:8081"
+    networks:
+      - microservices
+
+  order-service:
+    build:
+      context: ./order-service
+    ports:
+      - "8082:8082"
+    networks:
+      - microservices
+    depends_on:
+      - user-service
+
+  payment-service:
+    build: ./payment-service
+    networks:
+      - microservices
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+networks:
+  microservices:
+    driver: bridge
